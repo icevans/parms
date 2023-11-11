@@ -3,8 +3,6 @@ use std::process::exit;
 use clap::Parser;
 use dialoguer::Select;
 
-use ssm::get_parameters;
-
 mod ssm;
 
 #[derive(Parser, Debug)]
@@ -24,7 +22,7 @@ struct Args {
 async fn main() -> () {
     let args = Args::parse();
 
-    let parameters = get_parameters(&args.path, &args.region).await;
+    let parameters = ssm::get_parameters(&args.path, &args.region).await;
 
     if parameters.is_none() {
         eprintln!("No parameters found under that path");

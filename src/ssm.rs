@@ -2,11 +2,11 @@ use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_ssm::operation::describe_parameters::DescribeParametersOutput;
 use aws_sdk_ssm::{config::Region, Client};
 
-pub struct SSM {
+pub struct Ssm {
     client: Client,
 }
 
-impl SSM {
+impl Ssm {
     pub async fn new(region: &str) -> Self {
         let region_provider = RegionProviderChain::first_try(Region::new(String::from(region)))
             .or_default_provider()
@@ -31,17 +31,18 @@ impl SSM {
 
         let paged_response = paged_response.ok()?;
 
-        let names: Vec<_> = paged_response
+        let names: Vec<String> = paged_response
             .into_iter()
-            .map(|page_of_parameters| page_of_parameters.parameters.expect("wtf an empty page"))
-            .flatten()
+            .flat_map(|page_of_parameters| {
+                page_of_parameters.parameters.expect("wtf an empty page")
+            })
             .map(|parameter| parameter.name.expect("wtf a parameter without a name"))
             .collect();
 
-        if names.len() > 0 {
-            Some(names)
-        } else {
+        if names.is_empty() {
             None
+        } else {
+            Some(names)
         }
     }
 

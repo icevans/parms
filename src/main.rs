@@ -3,7 +3,7 @@ use std::process::exit;
 use clap::Parser;
 use dialoguer::{theme::ColorfulTheme, FuzzySelect};
 
-use crate::ssm::SSM;
+use crate::ssm::Ssm;
 
 mod ssm;
 
@@ -17,9 +17,9 @@ struct Args {
 
 /// Fetches a parameter and displays the decrypted value
 #[tokio::main]
-async fn main() -> () {
+async fn main() {
     let args = Args::parse();
-    let ssm = SSM::new(&args.region).await;
+    let ssm = Ssm::new(&args.region).await;
 
     let Some(parameter_names) = ssm.get_parameter_names().await else {
         eprintln!("No parameters exist in this region");

@@ -3,7 +3,7 @@ use std::process::exit;
 use clap::Parser;
 use dialoguer::{theme::ColorfulTheme, FuzzySelect};
 
-use ssm::get_parameter_names;
+use crate::ssm::SSM;
 
 mod ssm;
 
@@ -19,8 +19,9 @@ struct Args {
 #[tokio::main]
 async fn main() -> () {
     let args = Args::parse();
+    let ssm = SSM::new(&args.region).await;
 
-    let Some(parameter_names) = get_parameter_names(&args.region).await else {
+    let Some(parameter_names) = ssm.get_parameter_names().await else {
         eprintln!("No parameters exist in this region");
         exit(1);
     };
@@ -32,7 +33,10 @@ async fn main() -> () {
         .interact()
         .unwrap();
 
-    let value = ssm::get_parameter_value(&args.region, &parameter_names[selected_index]).await;
+    let value = ssm
+        .get_parameter_value(&parameter_names[selected_index])
+        .await;
+
     match value {
         None => println!("oops"),
         Some(value) => println!("{value}"),

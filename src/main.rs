@@ -1,5 +1,4 @@
-use std::process::exit;
-
+use anyhow::{bail, Result};
 use clap::Parser;
 use dialoguer::{theme::ColorfulTheme, FuzzySelect};
 
@@ -17,14 +16,15 @@ struct Args {
 
 /// Fetches a parameter and displays the decrypted value
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     let args = Args::parse();
     let ssm = Ssm::new(&args.region).await;
 
-    let Some(parameter_names) = ssm.get_parameter_names().await else {
-        eprintln!("No parameters exist in this region");
-        exit(1);
-    };
+    let parameter_names = ssm.get_parameter_names().await?;
+
+    if parameter_names.is_empty() {
+        bail!("no parameters found in region {}", args.region);
+    }
 
     let selected_index = FuzzySelect::with_theme(&ColorfulTheme::default())
         .with_prompt("Select parameter (type for fuzzy search):")
@@ -38,7 +38,12 @@ async fn main() {
         .await;
 
     match value {
-        None => println!("oops"),
-        Some(value) => println!("{value}"),
+        None => {
+            bail!("oops");
+        }
+        Some(value) => {
+            println!("{value}");
+            Ok(())
+        }
     }
 }

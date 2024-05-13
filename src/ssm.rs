@@ -53,4 +53,25 @@ impl Ssm {
 
         parameter.value.or(Some("".to_owned()))
     }
+
+    pub async fn update_parameter_value(
+        &self,
+        parameter_name: &str,
+        new_value: &str,
+    ) -> Result<(), Error> {
+        let response = self
+            .client
+            .put_parameter()
+            .name(parameter_name)
+            .value(new_value)
+            .overwrite(true)
+            .send()
+            .await;
+
+        if let Err(e) = response {
+            return Err(e.into());
+        }
+
+        Ok(())
+    }
 }

@@ -1,4 +1,3 @@
-use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_ssm::{config::Region, Client, Error};
 
 pub struct Ssm {
@@ -6,12 +5,16 @@ pub struct Ssm {
 }
 
 impl Ssm {
-    pub async fn new(region: &str) -> Self {
-        let region_provider = RegionProviderChain::first_try(Region::new(String::from(region)))
-            .or_default_provider()
-            .or_else("us-east-2");
-
-        let config = aws_config::from_env().region(region_provider).load().await;
+    pub async fn new(region: &Option<String>) -> Self {
+        let config = match region {
+            None => aws_config::from_env().load().await,
+            Some(region) => {
+                aws_config::from_env()
+                    .region(Region::new(region.to_owned()))
+                    .load()
+                    .await
+            }
+        };
 
         Self {
             client: Client::new(&config),

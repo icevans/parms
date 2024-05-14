@@ -11,8 +11,8 @@ mod ssm;
 #[command(author, version, about, long_about = None)]
 struct Cli {
     /// Search in this AWS region
-    #[arg(short, long, default_value_t = String::from("us-west-2"))]
-    region: String,
+    #[arg(short, long)]
+    region: Option<String>,
 
     #[command(subcommand)]
     command: Commands,
@@ -39,7 +39,7 @@ async fn main() -> Result<()> {
     let parameter_names = ssm.get_parameter_names().await?;
 
     if parameter_names.is_empty() {
-        bail!("no parameters found in region {}", cli.region);
+        bail!("no parameters found -- is your region configured?");
     }
 
     let selected_index = FuzzySelect::with_theme(&ColorfulTheme::default())

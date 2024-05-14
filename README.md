@@ -20,6 +20,18 @@ Not yet supported.
 
 ## Usage
 
+`parms` respects the usual AWS configuration methods. First, it will look in
+AWS environment variables, then in your ~/.aws/config file. If you connect via
+SSO, be sure that you have logged in via SSO, and that you have selected a profile
+by setting the `AWS_PROFILE` environment variable.
+
+A note on region:
+
+1. If you provide the `--region` argument, this takes precedence
+2. If you omit this, `parms` will check for a `AWS_REGION` or `AWS_DEFAULT_REGION` environment variable
+3. If this is missing, `parms` will check for a region on your selected profile
+4. If this too is missing, you will get an error
+
 ```
 Usage: parms [OPTIONS] <COMMAND>
 
@@ -29,7 +41,7 @@ edit  Allows to edit the current value of selected parameter
 help  Print this message or the help of the given subcommand(s)
 
 Options:
--r, --region <REGION>  Search in this AWS region [default: us-west-2]
+-r, --region <REGION>  Search in this AWS region
 -h, --help Print help
 -V, --version Print version
 ```

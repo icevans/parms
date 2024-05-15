@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
 use dialoguer::{theme::ColorfulTheme, Editor, FuzzySelect};
 use serde_json::Value;
@@ -35,7 +35,7 @@ enum Commands {
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    let ssm = Ssm::new(&cli.region).await;
+    let ssm = Ssm::new(cli.region).await;
     let parameter_names = ssm.get_parameter_names().await?;
 
     if parameter_names.is_empty() {
@@ -51,10 +51,9 @@ async fn main() -> Result<()> {
 
     let value = ssm
         .get_parameter_value(&parameter_names[selected_index])
-        .await
-        .ok_or(anyhow!("oops"))?;
+        .await?;
 
-    match &cli.command {
+    match cli.command {
         Commands::Fetch => {
             println!("{value}");
             Ok(())
@@ -67,7 +66,7 @@ async fn main() -> Result<()> {
                 return Ok(());
             };
 
-            if !*skip_json_validation {
+            if !skip_json_validation {
                 let _: Value = serde_json::from_str(&new_text)
                     .with_context(|| format!("Invalid json in: \r\n{}", new_text))?;
             }

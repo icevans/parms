@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use aws_sdk_ssm::{config::Region, Client, Error};
 
 pub struct Ssm {
@@ -5,12 +6,12 @@ pub struct Ssm {
 }
 
 impl Ssm {
-    pub async fn new(region: &Option<String>) -> Self {
+    pub async fn new(region: Option<String>) -> Self {
         let config = match region {
             None => aws_config::from_env().load().await,
             Some(region) => {
                 aws_config::from_env()
-                    .region(Region::new(region.to_owned()))
+                    .region(Region::new(region))
                     .load()
                     .await
             }
@@ -42,19 +43,21 @@ impl Ssm {
         Ok(names)
     }
 
-    pub async fn get_parameter_value(&self, parameter_name: &str) -> Option<String> {
+    pub async fn get_parameter_value(&self, parameter_name: &str) -> anyhow::Result<String> {
         let response = self
             .client
             .get_parameter()
             .name(parameter_name)
             .with_decryption(true)
             .send()
-            .await;
+            .await?;
 
-        let response = response.ok()?;
-        let parameter = response.parameter?;
-
-        parameter.value.or(Some("".to_owned()))
+        match response.parameter {
+            None => Err(anyhow!(
+                "AWS SDK fault: success response, but empty response"
+            )),
+            Some(parm) => Ok(parm.value.unwrap_or_else(|| "".to_string())),
+        }
     }
 
     pub async fn update_parameter_value(

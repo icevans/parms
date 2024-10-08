@@ -1,11 +1,12 @@
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use dialoguer::{theme::ColorfulTheme, Editor, FuzzySelect};
+use dialoguer::{Editor};
 use serde_json::Value;
-
+use crate::command_helpers::select_param_value;
 use crate::ssm::Ssm;
 
 mod ssm;
+mod command_helpers;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -36,32 +37,20 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     let ssm = Ssm::new(cli.region).await;
-    let parameter_names = ssm.get_parameter_names().await?;
 
-    if parameter_names.is_empty() {
-        bail!("no parameters found -- is your region configured?");
-    }
-
-    let selected_index = FuzzySelect::with_theme(&ColorfulTheme::default())
-        .with_prompt("Select parameter (type for fuzzy search):")
-        .max_length(10)
-        .items(&parameter_names)
-        .interact()
-        .unwrap();
-
-    let value = ssm
-        .get_parameter_value(&parameter_names[selected_index])
-        .await?;
 
     match cli.command {
         Commands::Fetch => {
-            println!("{value}");
+            let param = select_param_value(&ssm).await?;
+            println!("{}", param.value);
             Ok(())
         }
         Commands::Edit {
             skip_json_validation,
         } => {
-            let Some(new_text) = Editor::new().edit(&value).unwrap() else {
+            let param = select_param_value(&ssm).await?;
+
+            let Some(new_text) = Editor::new().edit(&param.value)? else {
                 println!("Editing aborted");
                 return Ok(());
             };
@@ -71,12 +60,12 @@ async fn main() -> Result<()> {
                     .with_context(|| format!("Invalid json in: \r\n{}", new_text))?;
             }
 
-            ssm.update_parameter_value(&parameter_names[selected_index], &new_text)
+            ssm.update_parameter_value(&param.name, &new_text)
                 .await?;
 
             println!(
                 "Successfully updated `{}`",
-                &parameter_names[selected_index]
+                &param.value
             );
 
             Ok(())

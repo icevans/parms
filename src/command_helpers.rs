@@ -1,12 +1,8 @@
-use anyhow::bail;
-use dialoguer::FuzzySelect;
-use dialoguer::theme::ColorfulTheme;
+use crate::param::Param;
 use crate::ssm::Ssm;
-
-pub struct Param {
-    pub name: String,
-    pub value: String,
-}
+use anyhow::bail;
+use dialoguer::theme::ColorfulTheme;
+use dialoguer::FuzzySelect;
 
 pub async fn select_param_value(ssm: &Ssm) -> anyhow::Result<Param> {
     let mut parameter_names = ssm.get_parameter_names().await?;
@@ -26,5 +22,5 @@ pub async fn select_param_value(ssm: &Ssm) -> anyhow::Result<Param> {
         .get_parameter_value(&parameter_names[selected_index])
         .await?;
 
-    Ok(Param { name: parameter_names.remove(selected_index), value}, )
+    Ok(Param::new(parameter_names.remove(selected_index), value))
 }

@@ -25,7 +25,7 @@ impl Ssm {
     }
 
     pub async fn create_parameter(&self, param: &Param) -> Result<(), Error> {
-        let result = self
+        self
             .client
             .put_parameter()
             .name(&param.name)

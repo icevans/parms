@@ -63,9 +63,10 @@ async fn main() -> Result<()> {
                     .with_context(|| format!("Invalid json in: \r\n{}", new_text))?;
             }
 
-            ssm.create_parameter(&Param::new(name, new_text)).await?;
+            let param = Param::new(name, new_text);
+            ssm.create_parameter(&param).await?;
 
-            println!("Successfully created `{}`", name);
+            println!("Successfully created `{}`", param.name);
 
             Ok(())
         }

@@ -1,5 +1,7 @@
+use crate::param::Param;
 use anyhow::anyhow;
 use aws_sdk_ssm::{config::Region, Client, Error};
+use aws_sdk_ssm::types::ParameterType::SecureString;
 
 pub struct Ssm {
     client: Client,
@@ -20,6 +22,19 @@ impl Ssm {
         Self {
             client: Client::new(&config),
         }
+    }
+
+    pub async fn create_parameter(&self, param: &Param) -> Result<(), Error> {
+        self
+            .client
+            .put_parameter()
+            .name(&param.name)
+            .value(&param.value)
+            .r#type(SecureString)
+            .send()
+            .await?;
+
+        Ok(())
     }
 
     pub async fn get_parameter_names(&self) -> Result<Vec<String>, Error> {

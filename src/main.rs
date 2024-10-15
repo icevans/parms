@@ -1,10 +1,13 @@
-use anyhow::{bail, Context, Result};
-use clap::{Parser, Subcommand};
-use dialoguer::{theme::ColorfulTheme, Editor, FuzzySelect};
-use serde_json::Value;
-
+use crate::command_helpers::{select_param_value};
 use crate::ssm::Ssm;
+use anyhow::{Context, Result};
+use clap::{Parser, Subcommand};
+use dialoguer::Editor;
+use serde_json::Value;
+use crate::param::Param;
 
+mod command_helpers;
+mod param;
 mod ssm;
 
 #[derive(Parser, Debug)]
@@ -20,6 +23,15 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
+    /// Creates a new parameter
+    Create {
+        /// The name of the parameter to create
+        #[arg(short, long)]
+        name: String,
+        /// Whether to skip the usual check that the supplied value is valid JSON
+        #[arg(short, long)]
+        skip_json_validation: bool,
+    },
     /// Fetches the value of selected parameter
     Fetch,
     /// Allows to edit the current value of selected parameter
@@ -30,38 +42,45 @@ enum Commands {
     },
 }
 
-/// Fetches a parameter and displays the decrypted value
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     let ssm = Ssm::new(cli.region).await;
-    let parameter_names = ssm.get_parameter_names().await?;
-
-    if parameter_names.is_empty() {
-        bail!("no parameters found -- is your region configured?");
-    }
-
-    let selected_index = FuzzySelect::with_theme(&ColorfulTheme::default())
-        .with_prompt("Select parameter (type for fuzzy search):")
-        .max_length(10)
-        .items(&parameter_names)
-        .interact()
-        .unwrap();
-
-    let value = ssm
-        .get_parameter_value(&parameter_names[selected_index])
-        .await?;
 
     match cli.command {
+        Commands::Create {
+            name,
+            skip_json_validation,
+        } => {
+            let Some(new_text) = Editor::new().edit(&"")? else {
+                println!("Creation aborted");
+                return Ok(());
+            };
+
+            if !skip_json_validation {
+                let _: Value = serde_json::from_str(&new_text)
+                    .with_context(|| format!("Invalid json in: \r\n{}", new_text))?;
+            }
+
+            let param = Param::new(name, new_text);
+            ssm.create_parameter(&param).await?;
+
+            println!("Successfully created `{}`", param.name);
+
+            Ok(())
+        }
         Commands::Fetch => {
-            println!("{value}");
+            let param = select_param_value(&ssm).await?;
+            println!("{}", param.value);
             Ok(())
         }
         Commands::Edit {
             skip_json_validation,
         } => {
-            let Some(new_text) = Editor::new().edit(&value).unwrap() else {
+            let param = select_param_value(&ssm).await?;
+
+            let Some(new_text) = Editor::new().edit(&param.value)? else {
                 println!("Editing aborted");
                 return Ok(());
             };
@@ -71,13 +90,9 @@ async fn main() -> Result<()> {
                     .with_context(|| format!("Invalid json in: \r\n{}", new_text))?;
             }
 
-            ssm.update_parameter_value(&parameter_names[selected_index], &new_text)
-                .await?;
+            ssm.update_parameter_value(&param.name, &new_text).await?;
 
-            println!(
-                "Successfully updated `{}`",
-                &parameter_names[selected_index]
-            );
+            println!("Successfully updated `{}`", &param.value);
 
             Ok(())
         }

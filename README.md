@@ -16,7 +16,7 @@ Not yet supported.
 
 1. [Install rustup](https://rustup.rs)
 2. From the root of this repository, run `cargo build --release`
-3. Copy `./release/target/parms` to somewhere in your `PATH` variable
+3. Copy `./target/release/parms` to somewhere in your `PATH` variable
 
 ## Usage
 
@@ -45,3 +45,4 @@ Options:
 -h, --help Print help
 -V, --version Print version
 ```
+

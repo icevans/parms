@@ -40,6 +40,12 @@ enum Commands {
         #[arg(short, long)]
         skip_json_validation: bool,
     },
+    /// Delete a parameter
+    Delete {
+        /// The name of the parameter to delete
+        #[arg(short, long)]
+        name: String,
+    },
 }
 
 #[tokio::main]
@@ -94,6 +100,15 @@ async fn main() -> Result<()> {
 
             println!("Successfully updated `{}`", &param.value);
 
+            Ok(())
+        }
+        Commands::Delete {
+            name,
+        } => {
+            ssm.delete_parameter(&name).await?;
+            
+            println!("Successfully deleted `{}`", name);
+            
             Ok(())
         }
     }

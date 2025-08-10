@@ -1,4 +1,3 @@
-use std::io::{self, Write};
 use crate::param::Param;
 use crate::ssm::Ssm;
 use anyhow::bail;
@@ -24,15 +23,4 @@ pub async fn select_param_value(ssm: &Ssm) -> anyhow::Result<Param> {
         .await?;
 
     Ok(Param::new(parameter_names.remove(selected_index), value))
-}
-
-pub fn confirm(prompt: String) -> bool {
-    print!("{} [y/N]: ", prompt);
-    io::stdout().flush().unwrap();
-
-    let mut input = String::new();
-    match io::stdin().read_line(&mut input) {
-        Ok(_) => matches!(input.trim().to_lowercase().as_str(), "y" | "yes"),
-        Err(_) => false,
-    }
 }

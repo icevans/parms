@@ -1,10 +1,10 @@
-use crate::command_helpers::{select_param_value};
+use crate::command_helpers::select_param_value;
+use crate::param::Param;
 use crate::ssm::Ssm;
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use dialoguer::Editor;
+use dialoguer::{Confirm, Editor};
 use serde_json::Value;
-use crate::param::Param;
 
 mod command_helpers;
 mod param;
@@ -40,6 +40,8 @@ enum Commands {
         #[arg(short, long)]
         skip_json_validation: bool,
     },
+    /// Delete a parameter
+    Delete,
 }
 
 #[tokio::main]
@@ -93,6 +95,22 @@ async fn main() -> Result<()> {
             ssm.update_parameter_value(&param.name, &new_text).await?;
 
             println!("Successfully updated `{}`", &param.value);
+
+            Ok(())
+        }
+        Commands::Delete => {
+            let param = select_param_value(&ssm).await?;
+
+            let confirmation = Confirm::new()
+                .with_prompt(format!("Delete parameter `{}`?", &param.name))
+                .interact()?;
+
+            if confirmation {
+                ssm.delete_parameter(&param.name).await?;
+                println!("Successfully deleted `{}`", param.name);
+            } else {
+                println!("Delete aborted.");
+            }
 
             Ok(())
         }

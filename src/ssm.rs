@@ -37,6 +37,17 @@ impl Ssm {
         Ok(())
     }
 
+    pub async fn delete_parameter(&self, parameter_name: &str) -> Result<(), Error> {
+        self
+            .client
+            .delete_parameter()
+            .name(parameter_name)
+            .send()
+            .await?;
+
+        Ok(())
+    }
+
     pub async fn get_parameter_names(&self) -> Result<Vec<String>, Error> {
         let paged_response: Result<Vec<_>, _> = self
             .client

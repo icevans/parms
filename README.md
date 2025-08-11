@@ -36,13 +36,15 @@ A note on region:
 Usage: parms [OPTIONS] <COMMAND>
 
 Commands:
-fetch Fetches the value of selected parameter
-edit  Allows to edit the current value of selected parameter
-help  Print this message or the help of the given subcommand(s)
+  create  Creates a new parameter
+  fetch   Fetches the value of selected parameter
+  edit    Allows to edit the current value of selected parameter
+  delete  Delete a parameter
+  help    Print this message or the help of the given subcommand(s)
 
 Options:
--r, --region <REGION>  Search in this AWS region
--h, --help Print help
--V, --version Print version
+  -r, --region <REGION>  Search in this AWS region
+  -h, --help             Print help
+  -V, --version          Print version
 ```
 
